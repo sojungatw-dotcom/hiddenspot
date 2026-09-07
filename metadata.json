@@ -1,0 +1,6 @@
+{
+  "name": "Hidden Spot Busan",
+  "description": "부산 N차 재방문자를 위한 AI 기반 로컬 히든 스팟 추천 및 Hidden Score 분석 서비스",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
