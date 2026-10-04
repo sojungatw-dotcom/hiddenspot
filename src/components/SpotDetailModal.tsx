@@ -52,8 +52,20 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
     }
   };
 
+  const [showTransitTooltip, setShowTransitTooltip] = useState(false);
+
+  const handleTransit = () => {
+    handleCopyAddress();
+    setShowTransitTooltip(true);
+    setTimeout(() => setShowTransitTooltip(false), 3000);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col overflow-hidden select-none animate-in slide-in-from-right duration-250">
+    <div className="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-0 md:p-6 overflow-hidden select-none animate-in fade-in duration-200">
+      {/* Click outside to close on desktop */}
+      <div className="absolute inset-0 -z-10" onClick={onClose} />
+
+      <div className="w-full max-w-2xl h-full md:h-[88vh] bg-white md:rounded-3xl shadow-2xl flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200">
       {/* Top Floating Nav Bar */}
       <div className="w-full bg-white/90 backdrop-blur-md border-b border-stone-100 px-4 py-2.5 flex items-center justify-between z-30 shrink-0">
         <button
@@ -406,11 +418,17 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
 
         {/* 길찾기 Button */}
         <button
-          onClick={() => alert(`${spot.name} 길안내: ${spot.transitTip}`)}
-          className="py-3 px-3.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-sky-200"
+          onClick={handleTransit}
+          className="relative py-3 px-3.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-sky-200"
+          title="길안내 복사 및 확인"
         >
           <Navigation className="w-4 h-4" />
           <span>길찾기</span>
+          {showTransitTooltip && (
+            <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap bg-stone-900 text-white text-[10px] py-1 px-2.5 rounded-lg shadow-lg">
+              주소 복사됨! 네이버지도/카카오맵에서 검색하세요
+            </span>
+          )}
         </button>
 
         {/* 내 보관함에 저장 Button */}
@@ -425,6 +443,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           <Bookmark className={`w-4 h-4 ${spot.isSaved ? 'fill-white' : ''}`} />
           <span>{spot.isSaved ? '보관함에 저장됨' : '내 보관함에 저장'}</span>
         </button>
+      </div>
       </div>
     </div>
   );

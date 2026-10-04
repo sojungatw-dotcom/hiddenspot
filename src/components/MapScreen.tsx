@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { Search, X, SlidersHorizontal, ChevronDown, RotateCw, Crosshair, Layers, Navigation, Bookmark, Check } from 'lucide-react';
+import {
+  Search,
+  X,
+  SlidersHorizontal,
+  ChevronDown,
+  RotateCw,
+  Crosshair,
+  Layers,
+  Navigation,
+  Bookmark,
+  Check,
+  MapPin,
+  Sparkles,
+  ArrowRight,
+} from 'lucide-react';
 import { Spot } from '../types';
 
 interface MapScreenProps {
@@ -8,6 +22,7 @@ interface MapScreenProps {
   onToggleSave: (spotId: string, e: React.MouseEvent) => void;
   onToggleVisited: (spotId: string, e: React.MouseEvent) => void;
   onOpenVisitedManager: () => void;
+  isWebMode?: boolean;
 }
 
 export const MapScreen: React.FC<MapScreenProps> = ({
@@ -16,21 +31,36 @@ export const MapScreen: React.FC<MapScreenProps> = ({
   onToggleSave,
   onToggleVisited,
   onOpenVisitedManager,
+  isWebMode = false,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('영도구 흰여울마을 주변');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpotId, setSelectedSpotId] = useState<string>('spot-1');
-  const [activeRegion, setActiveRegion] = useState<string>('영도구');
-  const [minScoreFilter, setMinScoreFilter] = useState<boolean>(true);
+  const [activeRegion, setActiveRegion] = useState<string>('전체');
+  const [minScoreFilter, setMinScoreFilter] = useState<boolean>(false);
   const [isScanning, setIsScanning] = useState<boolean>(false);
 
   // Filter spots for map
   const mapSpots = spots.filter((spot) => {
     if (spot.isVisited) return false;
     if (minScoreFilter && spot.hiddenScore < 80) return false;
+    if (activeRegion !== '전체') {
+      if (!spot.region.includes(activeRegion) && !spot.district.includes(activeRegion)) {
+        return false;
+      }
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        spot.name.toLowerCase().includes(q) ||
+        spot.district.toLowerCase().includes(q) ||
+        spot.category.toLowerCase().includes(q)
+      );
+    }
     return true;
   });
 
-  const selectedSpot = spots.find((s) => s.id === selectedSpotId) || mapSpots[0] || spots[0];
+  const selectedSpot =
+    spots.find((s) => s.id === selectedSpotId) || mapSpots[0] || spots[0];
 
   const handleRescan = () => {
     setIsScanning(true);
@@ -39,167 +69,62 @@ export const MapScreen: React.FC<MapScreenProps> = ({
     }, 1200);
   };
 
-  return (
-    <div className="flex-1 relative flex flex-col overflow-hidden select-none bg-sky-50">
-      {/* Top Floating Controls Container */}
-      <div className="absolute top-2 left-3 right-3 z-20 space-y-2">
-        {/* Search Input */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-stone-100 flex items-center px-3.5 py-2.5 gap-2">
-          <Search className="w-4 h-4 text-stone-400 shrink-0" />
-          <input
-            id="map-search-input"
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 text-xs font-semibold text-stone-800 bg-transparent focus:outline-none placeholder:text-stone-400"
-            placeholder="동네 또는 테마 검색..."
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="text-stone-400 hover:text-stone-600 cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <div className="w-px h-4 bg-stone-200 mx-0.5" />
-          <button
-            className="text-stone-500 hover:text-stone-800 cursor-pointer"
-            title="필터"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-          </button>
-        </div>
+  // Render Map Canvas Element
+  const renderMapCanvas = (isWide: boolean) => (
+    <div className="w-full h-full relative overflow-hidden bg-[#d9ecfa] rounded-2xl select-none">
+      {/* SVG Coastline & Sea Gradients */}
+      <svg
+        className="w-full h-full absolute inset-0 select-none pointer-events-none"
+        viewBox="0 0 400 650"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        <defs>
+          <pattern id="sea-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#cae4f7" strokeWidth="0.8" />
+          </pattern>
+        </defs>
 
-        {/* Region & Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveRegion(activeRegion === '영도구' ? '전체' : '영도구')}
-            className="flex items-center gap-1 px-3 py-1 rounded-full bg-stone-900 text-white text-[11px] font-bold shadow-xs shrink-0 cursor-pointer"
-          >
-            <span>영도구</span>
-            <ChevronDown className="w-3 h-3 text-stone-300" />
-          </button>
+        <rect width="100%" height="100%" fill="url(#sea-grid)" />
 
-          <button
-            onClick={() => setActiveRegion('전포·서면')}
-            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-colors shrink-0 cursor-pointer ${
-              activeRegion === '전포·서면'
-                ? 'bg-stone-900 text-white font-bold'
-                : 'bg-white/90 text-stone-700 hover:bg-white shadow-xs'
-            }`}
-          >
-            전포·서면
-          </button>
+        {/* Mainland Busan Landmass (Top/Center) */}
+        <path
+          d="M -20 -20 L 420 -20 L 420 380 Q 360 360 300 400 T 220 370 Q 150 360 100 420 Q 40 440 -20 400 Z"
+          fill="#f7faf7"
+          stroke="#d8e8d8"
+          strokeWidth="2"
+        />
 
-          <button
-            onClick={() => setActiveRegion('망미동')}
-            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-colors shrink-0 cursor-pointer ${
-              activeRegion === '망미동'
-                ? 'bg-stone-900 text-white font-bold'
-                : 'bg-white/90 text-stone-700 hover:bg-white shadow-xs'
-            }`}
-          >
-            망미동
-          </button>
+        {/* Yeongdo Island Landmass (South) */}
+        <path
+          d="M 120 460 Q 180 430 260 450 Q 300 510 270 580 Q 210 630 140 590 Q 90 530 120 460 Z"
+          fill="#ffffff"
+          stroke="#d5e8dc"
+          strokeWidth="3"
+          filter="drop-shadow(0 2px 8px rgba(0,0,0,0.06))"
+        />
 
-          <button
-            onClick={() => setMinScoreFilter(!minScoreFilter)}
-            className={`flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold shadow-xs shrink-0 cursor-pointer transition-colors ${
-              minScoreFilter
-                ? 'bg-rose-500 text-white'
-                : 'bg-white/90 text-stone-700'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-            <span>히든 스코어 80+</span>
-          </button>
-        </div>
+        {/* Busan Harbor Bridge (Busanhangdaegyo) Curved Dashed Line */}
+        <path
+          d="M 240 450 Q 310 420 360 360"
+          fill="none"
+          stroke="#93c5fd"
+          strokeWidth="2.5"
+          strokeDasharray="4 3"
+        />
 
-        {/* Excluded Visited Notice Banner */}
-        <div
-          onClick={onOpenVisitedManager}
-          className="bg-amber-50/90 backdrop-blur-xs border border-amber-200/70 rounded-xl px-3 py-1.5 flex items-center justify-between text-[11px] text-amber-900 shadow-xs cursor-pointer hover:bg-amber-100 transition-colors"
-        >
-          <div className="flex items-center gap-1.5 truncate">
-            <Check className="w-3 h-3 text-emerald-600 stroke-[3px]" />
-            <span>가본 곳 <strong className="font-extrabold text-stone-900">18곳</strong>은 지도에서 제외 중</span>
-          </div>
-          <span className="text-[10px] font-bold text-amber-700 underline shrink-0 ml-2">
-            관리
-          </span>
-        </div>
-      </div>
+        <text x="280" y="390" fill="#60a5fa" fontSize="9" fontWeight="bold">
+          부산항대교
+        </text>
+        <text x="180" y="550" fill="#9ca3af" fontSize="11" fontWeight="bold" opacity="0.6">
+          영도구 (봉래산)
+        </text>
+        <text x="170" y="240" fill="#9ca3af" fontSize="11" fontWeight="bold" opacity="0.6">
+          서면 · 전포동
+        </text>
+      </svg>
 
-      {/* Stylized Busan Interactive Vector Map */}
-      <div className="w-full h-full relative overflow-hidden bg-[#d9ecfa]">
-        {/* SVG Coastline & Sea Gradients */}
-        <svg
-          className="w-full h-full absolute inset-0 select-none pointer-events-none"
-          viewBox="0 0 400 650"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          {/* Subtle Grid Water Pattern */}
-          <defs>
-            <pattern id="sea-grid" width="30" height="30" patternUnits="userSpaceOnUse">
-              <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#cae4f7" strokeWidth="0.8" />
-            </pattern>
-            <radialGradient id="radar-glow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-
-          <rect width="100%" height="100%" fill="url(#sea-grid)" />
-
-          {/* Mainland Busan Landmass (Top/Center) */}
-          <path
-            d="M -20 -20 L 420 -20 L 420 380 Q 360 360 300 400 T 220 370 Q 150 360 100 420 Q 40 440 -20 400 Z"
-            fill="#f7faf7"
-            stroke="#d8e8d8"
-            strokeWidth="2"
-          />
-
-          {/* Yeongdo Island Landmass (South) */}
-          <path
-            d="M 120 460 Q 180 430 260 450 Q 300 510 270 580 Q 210 630 140 590 Q 90 530 120 460 Z"
-            fill="#ffffff"
-            stroke="#d5e8dc"
-            strokeWidth="3"
-            filter="drop-shadow(0 2px 8px rgba(0,0,0,0.06))"
-          />
-
-          {/* Busan Harbor Bridge (Busanhangdaegyo) Curved Dashed Line */}
-          <path
-            d="M 240 450 Q 310 420 360 360"
-            fill="none"
-            stroke="#93c5fd"
-            strokeWidth="2.5"
-            strokeDasharray="4 3"
-          />
-
-          {/* Namhang Bridge (Namhangdaegyo) Dashed Line */}
-          <path
-            d="M 125 530 Q 80 520 40 510"
-            fill="none"
-            stroke="#f87171"
-            strokeWidth="2"
-            strokeDasharray="3 3"
-          />
-
-          {/* Coastal Text Labels */}
-          <text x="50" y="470" fill="#94a3b8" fontSize="10" fontWeight="600">
-            송도 해상둘레
-          </text>
-          <text x="130" y="560" fill="#64748b" fontSize="10" fontWeight="700">
-            흰여울 해안절벽
-          </text>
-          <text x="250" y="320" fill="#94a3b8" fontSize="9" fontWeight="600">
-            서면·전포 사잇길
-          </text>
-        </svg>
-
-        {/* Radar Pulse / Scan Effect around active selected spot */}
+      {/* Radar Pulse / Scan Effect around active selected spot */}
+      {selectedSpot && (
         <div
           className={`absolute pointer-events-none transition-all duration-700 ${
             isScanning ? 'scale-125 opacity-100' : 'opacity-80'
@@ -210,209 +135,330 @@ export const MapScreen: React.FC<MapScreenProps> = ({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="w-48 h-48 rounded-full bg-white/40 border-2 border-rose-300/60 animate-ping" />
-          <div className="absolute inset-0 m-auto w-36 h-36 rounded-full bg-rose-400/10 border border-rose-400/30" />
+          <div className="w-40 h-40 rounded-full bg-white/40 border-2 border-rose-300/60 animate-ping" />
+          <div className="absolute inset-0 m-auto w-28 h-28 rounded-full bg-rose-400/15 border border-rose-400/30" />
         </div>
+      )}
 
-        {/* Map Interactive Pins */}
-        {mapSpots.map((spot) => {
-          const isSelected = spot.id === selectedSpotId;
+      {/* Map Interactive Pins */}
+      {mapSpots.map((spot) => {
+        const isSelected = spot.id === selectedSpotId;
 
-          return (
+        return (
+          <div
+            key={spot.id}
+            onClick={() => setSelectedSpotId(spot.id)}
+            className="absolute z-10 -translate-x-1/2 -translate-y-full cursor-pointer transition-all duration-300"
+            style={{
+              left: `${spot.mapPosition.x}%`,
+              top: `${spot.mapPosition.y}%`,
+            }}
+          >
+            {/* Custom Pin Label */}
             <div
-              key={spot.id}
-              onClick={() => setSelectedSpotId(spot.id)}
-              className="absolute z-10 -translate-x-1/2 -translate-y-full cursor-pointer transition-all duration-300"
-              style={{
-                left: `${spot.mapPosition.x}%`,
-                top: `${spot.mapPosition.y}%`,
-              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black whitespace-nowrap shadow-lg transition-transform ${
+                isSelected
+                  ? 'bg-rose-600 text-white scale-110 ring-4 ring-rose-500/30 ring-offset-2'
+                  : 'bg-white text-stone-900 hover:scale-105 border border-stone-200'
+              }`}
             >
-              {/* Custom Pin Label */}
-              <div
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold whitespace-nowrap shadow-lg transition-transform ${
-                  isSelected
-                    ? 'bg-rose-500 text-white scale-110 ring-4 ring-rose-500/30 ring-offset-2'
-                    : spot.hiddenScore >= 90
-                    ? 'bg-white text-stone-900 hover:scale-105 border border-rose-200'
-                    : 'bg-white/95 text-stone-800 hover:scale-105 border border-stone-200'
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isSelected ? 'bg-white' : spot.hiddenScore >= 90 ? 'bg-rose-500' : 'bg-emerald-500'
                 }`}
-              >
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isSelected ? 'bg-white' : spot.hiddenScore >= 90 ? 'bg-rose-500' : 'bg-sky-500'
-                  }`}
-                />
-                <span>
-                  {spot.hiddenScore}점 {spot.name.split(' ')[0]}
-                </span>
-                {spot.recentTrend?.includes('+') && (
-                  <span className="text-[10px] text-sky-300 font-semibold">
-                    ▲
-                  </span>
-                )}
-              </div>
-
-              {/* Pin Pointer Stem */}
-              <div className="w-0.5 h-2.5 bg-stone-700/60 mx-auto" />
+              />
+              <span>{spot.hiddenScore}점</span>
+              <span className="font-semibold text-[11px]">{spot.name.split(' ')[0]}</span>
             </div>
-          );
-        })}
 
-        {/* Grayed out Pin: 이미 가본 곳 (예: 신기산업 본점) */}
-        <div
-          className="absolute z-0 -translate-x-1/2 -translate-y-full opacity-60 pointer-events-none"
-          style={{ left: '48%', top: '48%' }}
-        >
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-200/90 text-stone-500 text-[10px] font-medium border border-stone-300">
-            <span>✓ 신기산업 본점</span>
+            {/* Pin Pointer Stem */}
+            <div className="w-0.5 h-3 bg-stone-800/70 mx-auto" />
           </div>
-        </div>
+        );
+      })}
 
-        {/* Floating Map Actions (Re-search & Target & Layers) */}
-        <div className="absolute right-3 top-36 flex flex-col gap-2 z-20">
-          <button
-            id="map-locate-btn"
-            onClick={handleRescan}
-            className="w-10 h-10 rounded-2xl bg-white/95 text-stone-700 hover:text-stone-950 shadow-md flex items-center justify-center cursor-pointer transition-all hover:scale-105"
-            title="내 위치 중심"
-          >
-            <Crosshair className="w-4 h-4 text-sky-600" />
-          </button>
-          <button
-            id="map-layers-btn"
-            className="w-10 h-10 rounded-2xl bg-white/95 text-stone-700 hover:text-stone-950 shadow-md flex items-center justify-center cursor-pointer transition-all hover:scale-105"
-            title="지도 레이어"
-          >
-            <Layers className="w-4 h-4 text-stone-600" />
-          </button>
-        </div>
-
-        {/* Center Re-search Floating Button */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-36 z-20">
-          <button
-            id="map-rescan-btn"
-            onClick={handleRescan}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 text-stone-800 text-[11px] font-bold shadow-md hover:bg-white active:scale-95 transition-all border border-stone-200 cursor-pointer"
-          >
-            <RotateCw className={`w-3 h-3 text-rose-500 ${isScanning ? 'animate-spin' : ''}`} />
-            <span>이 지역 재검색</span>
-          </button>
-        </div>
+      {/* Floating Map Actions */}
+      <div className="absolute right-4 top-4 flex flex-col gap-2 z-20">
+        <button
+          onClick={handleRescan}
+          className="w-10 h-10 rounded-xl bg-white/95 text-stone-700 hover:text-stone-950 shadow-md flex items-center justify-center cursor-pointer transition-all hover:scale-105"
+          title="내 위치 재검색"
+        >
+          <Crosshair className="w-4 h-4 text-sky-600" />
+        </button>
+        <button
+          onClick={handleRescan}
+          className="w-10 h-10 rounded-xl bg-white/95 text-stone-700 hover:text-stone-950 shadow-md flex items-center justify-center cursor-pointer transition-all hover:scale-105"
+          title="새로고침"
+        >
+          <RotateCw className={`w-4 h-4 text-rose-500 ${isScanning ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
-      {/* Bottom Sheet Selected Spot Card (Image 5 style) */}
-      {selectedSpot && (
-        <div className="bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] border-t border-stone-100 p-4 space-y-3 z-30 shrink-0 max-h-[48%] overflow-y-auto">
-          {/* Header row: Badge, Trend, Address */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Floating Center Badge in Map */}
+      <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-xs border border-stone-200/80 text-xs font-bold text-stone-700">
+        <span className="text-rose-500 mr-1.5">●</span>
+        <span>부산 로컬 히든 맵</span>
+        <span className="text-stone-400 font-normal ml-1">({mapSpots.length}곳 표시 중)</span>
+      </div>
+
+      {/* Floating Preview Card on wide map */}
+      {isWide && selectedSpot && (
+        <div className="absolute bottom-6 left-6 right-6 max-w-lg bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-stone-200 p-4 z-20 flex items-center justify-between gap-4 animate-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-3">
+            <img
+              src={selectedSpot.images[0]}
+              alt={selectedSpot.name}
+              className="w-16 h-16 rounded-xl object-cover shadow-xs shrink-0"
+            />
+            <div>
+              <div className="flex items-center gap-1.5">
                 <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black">
-                  히든 {selectedSpot.hiddenScore}점
+                  {selectedSpot.hiddenScore}점
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-600 border border-sky-200 text-[10px] font-bold">
-                  {selectedSpot.recentTrend || '▲ 30일 저장 2.4배'}
-                </span>
-                <span className="text-stone-400 text-[11px] font-medium">
-                  {selectedSpot.district}
-                </span>
+                <span className="text-xs text-stone-400 font-medium">{selectedSpot.district}</span>
               </div>
+              <h4 className="text-sm font-black text-stone-900 mt-0.5">{selectedSpot.name}</h4>
+              <p className="text-[11px] text-stone-500 truncate max-w-xs">{selectedSpot.address}</p>
+            </div>
+          </div>
 
-              <h3
-                onClick={() => onSelectSpot(selectedSpot)}
-                className="text-base font-black text-stone-900 leading-tight hover:text-rose-600 transition-colors cursor-pointer"
-              >
-                {selectedSpot.name}
-              </h3>
+          <button
+            onClick={() => onSelectSpot(selectedSpot)}
+            className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition-all shrink-0 cursor-pointer shadow-xs"
+          >
+            상세보기
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
-              <p className="text-[11px] text-stone-500 truncate">
-                {selectedSpot.address} · {selectedSpot.category}
+  return (
+    <div className={`flex-1 select-none ${isWebMode ? 'space-y-6 pb-16' : 'relative flex flex-col overflow-hidden h-full'}`}>
+      {/* ======================================================== */}
+      {/* WEB DESKTOP SPLIT LAYOUT                                 */}
+      {/* ======================================================== */}
+      {isWebMode ? (
+        <div className="space-y-6">
+          {/* Header on Web */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+                로컬 히든 맵 탐험
+              </h1>
+              <p className="text-xs sm:text-sm text-stone-500 mt-1">
+                지도 위 핀을 클릭하여 주변 환경과 골목 히든 스팟을 한눈에 살펴보세요.
               </p>
             </div>
 
-            {/* Thumbnail Image */}
+            {/* Already Visited Excluded Notice */}
             <div
-              onClick={() => onSelectSpot(selectedSpot)}
-              className="w-16 h-16 rounded-xl overflow-hidden shrink-0 shadow-xs cursor-pointer group"
+              onClick={onOpenVisitedManager}
+              className="bg-amber-50 border border-amber-200/80 rounded-2xl px-4 py-2.5 flex items-center gap-2 cursor-pointer hover:bg-amber-100/70 transition-colors shadow-xs"
             >
-              <img
-                src={selectedSpot.images[0]}
-                alt={selectedSpot.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-              />
-            </div>
-          </div>
-
-          {/* Spot Recommendation Reason Box */}
-          <div className="bg-amber-50 rounded-xl p-2.5 border border-amber-200/60 text-stone-800 text-xs flex items-start gap-2 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-rose-500 mt-1 shrink-0" />
-            <p className="text-[11px] leading-snug">
-              {selectedSpot.matchReason || `내 취향과 ${selectedSpot.matchRate}% 잘 맞는 곳이에요.`}
-            </p>
-          </div>
-
-          {/* 3 Metric Badges: 외지인 밀도, 현지 재방문, 현재 여유도 */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-stone-50 rounded-xl p-2 text-center border border-stone-100">
-              <div className="text-[10px] text-stone-400 font-medium">외지인 밀도</div>
-              <div className="text-xs font-black text-emerald-600 mt-0.5">
-                {selectedSpot.touristRatio}
-              </div>
-            </div>
-
-            <div className="bg-stone-50 rounded-xl p-2 text-center border border-stone-100">
-              <div className="text-[10px] text-stone-400 font-medium">현지 재방문</div>
-              <div className="text-xs font-black text-stone-900 mt-0.5">
-                {selectedSpot.localRevisitScore}점
-              </div>
-            </div>
-
-            <div className="bg-stone-50 rounded-xl p-2 text-center border border-stone-100">
-              <div className="text-[10px] text-stone-400 font-medium">현재 여유도</div>
-              <div className="text-xs font-black text-sky-600 mt-0.5">
-                {selectedSpot.currentSeatsOrTeams || '보통 (6팀)'}
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom 3 Action Buttons */}
-          <div className="grid grid-cols-3 gap-2 pt-1">
-            <button
-              onClick={(e) => onToggleVisited(selectedSpot.id, e)}
-              className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border ${
-                selectedSpot.isVisited
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : 'bg-stone-100 hover:bg-stone-200/80 text-stone-700 border-stone-200/60'
-              }`}
-            >
-              <Check className={`w-3.5 h-3.5 ${selectedSpot.isVisited ? 'text-emerald-600' : 'text-stone-500'}`} />
-              <span>
-                {selectedSpot.isVisited
-                  ? selectedSpot.myReview
-                    ? `★ ${selectedSpot.myReview.rating}.0 다녀옴`
-                    : '다녀온 곳'
-                  : '가봤어요'}
+              <Check className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs text-amber-900 font-medium">
+                이미 가본 <strong className="text-stone-900 font-bold">18곳</strong>은 지도에서 제외 중
               </span>
-            </button>
+              <span className="text-xs text-amber-800 font-bold underline ml-1">관리</span>
+            </div>
+          </div>
 
-            <button
-              onClick={() => onSelectSpot(selectedSpot)}
-              className="py-2.5 px-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border border-sky-200"
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>길찾기 안내</span>
-            </button>
+          {/* Desktop Split View: Left List (380px) + Right Map (flex-1) */}
+          <div className="bg-white rounded-3xl border border-stone-200 shadow-md p-4 flex flex-col lg:flex-row gap-4 h-[750px] overflow-hidden">
+            {/* Left Column: Filter & Spots List */}
+            <div className="w-full lg:w-[400px] flex flex-col shrink-0 overflow-hidden border-b lg:border-b-0 lg:border-r border-stone-100 pr-0 lg:pr-4">
+              {/* Search & Region Filters */}
+              <div className="space-y-2 pb-3 border-b border-stone-100 shrink-0">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="동네 또는 스팟 이름 검색..."
+                    className="w-full pl-9 pr-8 py-2 bg-stone-100 rounded-xl text-xs text-stone-900 focus:outline-none focus:bg-white border border-transparent focus:border-stone-300"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
-            <button
-              onClick={() => onSelectSpot(selectedSpot)}
-              className="py-2.5 px-2 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-98 text-white text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer shadow-md shadow-rose-500/20"
-            >
-              <Bookmark className="w-3.5 h-3.5 fill-white" />
-              <span>상세보기 & 저장</span>
-            </button>
+                {/* Region Chips */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                  {['전체', '영도구', '전포·서면', '망미동', '동구·초량'].map((reg) => (
+                    <button
+                      key={reg}
+                      onClick={() => setActiveRegion(reg)}
+                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        activeRegion === reg
+                          ? 'bg-stone-900 text-white shadow-xs'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      }`}
+                    >
+                      {reg}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scrollable Spots List */}
+              <div className="flex-1 overflow-y-auto space-y-3 py-3 pr-1">
+                {mapSpots.map((spot) => {
+                  const isSelected = spot.id === selectedSpotId;
+                  return (
+                    <div
+                      key={spot.id}
+                      onClick={() => setSelectedSpotId(spot.id)}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex gap-3 ${
+                        isSelected
+                          ? 'bg-rose-50/70 border-rose-300 shadow-sm ring-1 ring-rose-200'
+                          : 'bg-stone-50/60 hover:bg-stone-100 border-stone-200/70'
+                      }`}
+                    >
+                      <img
+                        src={spot.images[0]}
+                        alt={spot.name}
+                        className="w-20 h-20 rounded-xl object-cover shrink-0 shadow-xs"
+                      />
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-rose-600 truncate">
+                              {spot.region} · {spot.category}
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded-md bg-stone-900 text-white text-[10px] font-bold">
+                              {spot.hiddenScore}점
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-black text-stone-900 truncate mt-0.5">
+                            {spot.name}
+                          </h4>
+                          <p className="text-[11px] text-stone-500 line-clamp-1 mt-0.5">
+                            {spot.shortDesc}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 border-t border-stone-200/50 text-[11px]">
+                          <span className="text-stone-400 truncate">{spot.district}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectSpot(spot);
+                            }}
+                            className="text-rose-600 font-bold hover:underline"
+                          >
+                            상세보기 →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right Column: Large Interactive Map Canvas */}
+            <div className="flex-1 h-full min-h-[300px]">
+              {renderMapCanvas(true)}
+            </div>
           </div>
         </div>
+      ) : (
+        /* ======================================================== */
+        /* MOBILE VIEW WITH OVERLAY SEARCH & BOTTOM SHEET          */
+        /* ======================================================== */
+        <>
+          {/* Top Floating Controls */}
+          <div className="absolute top-2 left-3 right-3 z-20 space-y-2">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-stone-100 flex items-center px-3.5 py-2.5 gap-2">
+              <Search className="w-4 h-4 text-stone-400 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 text-xs font-semibold text-stone-800 bg-transparent focus:outline-none placeholder:text-stone-400"
+                placeholder="동네 또는 테마 검색..."
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="text-stone-400">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Region Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              {['전체', '영도구', '전포·서면', '망미동'].map((reg) => (
+                <button
+                  key={reg}
+                  onClick={() => setActiveRegion(reg)}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold shadow-xs shrink-0 cursor-pointer ${
+                    activeRegion === reg ? 'bg-stone-900 text-white' : 'bg-white/90 text-stone-700'
+                  }`}
+                >
+                  {reg}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Map canvas */}
+          <div className="flex-1 w-full h-full">
+            {renderMapCanvas(false)}
+          </div>
+
+          {/* Bottom Sheet */}
+          {selectedSpot && (
+            <div className="bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] border-t border-stone-100 p-4 space-y-3 z-30 shrink-0 max-h-[48%] overflow-y-auto">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black">
+                      히든 {selectedSpot.hiddenScore}점
+                    </span>
+                    <span className="text-stone-400 text-[11px]">{selectedSpot.district}</span>
+                  </div>
+                  <h3
+                    onClick={() => onSelectSpot(selectedSpot)}
+                    className="text-base font-black text-stone-900 leading-tight hover:text-rose-600 transition-colors cursor-pointer"
+                  >
+                    {selectedSpot.name}
+                  </h3>
+                  <p className="text-[11px] text-stone-500 truncate">{selectedSpot.address}</p>
+                </div>
+                <div
+                  onClick={() => onSelectSpot(selectedSpot)}
+                  className="w-16 h-16 rounded-xl overflow-hidden shrink-0 shadow-xs cursor-pointer"
+                >
+                  <img src={selectedSpot.images[0]} alt={selectedSpot.name} className="w-full h-full object-cover" />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs">
+                <button
+                  onClick={(e) => onToggleSave(selectedSpot.id, e)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 text-stone-700"
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${selectedSpot.isSaved ? 'fill-rose-500 text-rose-500' : 'text-stone-400'}`} />
+                  <span>{selectedSpot.isSaved ? '보관됨' : '보관하기'}</span>
+                </button>
+                <button
+                  onClick={() => onSelectSpot(selectedSpot)}
+                  className="px-4 py-1.5 rounded-xl bg-stone-900 text-white font-bold"
+                >
+                  상세보기
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { INITIAL_SPOTS, INITIAL_USER } from './data/initialSpots';
 import { Spot, UserProfile } from './types';
 import { PhoneMockupFrame } from './components/PhoneMockupFrame';
+import { WebNavbar } from './components/WebNavbar';
+import { WebFooter } from './components/WebFooter';
 import { AppHeader } from './components/AppHeader';
 import { BottomNav, NavTab } from './components/BottomNav';
 import { HomeScreen } from './components/HomeScreen';
@@ -31,6 +33,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [selectedRegion, setSelectedRegion] = useState<string>('전체');
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
+
+  // View mode: false = Desktop Website Mode, true = Smartphone Hardware Mockup Mode
+  const [isMockupMode, setIsMockupMode] = useState<boolean>(false);
 
   // Modals state
   const [isVisitedManagerOpen, setIsVisitedManagerOpen] = useState(false);
@@ -181,7 +186,6 @@ export default function App() {
   // Add newly generated AI spots
   const handleAddAiSpots = (newSpots: Spot[]) => {
     setSpots((prev) => [...newSpots, ...prev]);
-    // Automatically open first new spot
     if (newSpots.length > 0) {
       setSelectedSpot(newSpots[0]);
     }
@@ -220,7 +224,7 @@ export default function App() {
     setIsAuthModalOpen(true);
   };
 
-  // Determine header title based on active tab
+  // Determine header title based on active tab for mobile
   const getHeaderTitle = () => {
     switch (activeTab) {
       case 'home':
@@ -236,76 +240,178 @@ export default function App() {
     }
   };
 
+  const savedSpotsCount = spots.filter((s) => s.isSaved && !s.isVisited).length;
+
   return (
-    <PhoneMockupFrame
-      onOpenAiGenerator={() => setIsAiModalOpen(true)}
-      aiLoading={aiLoading}
-    >
-      {/* Mobile App Header */}
-      <AppHeader
-        title={getHeaderTitle()}
-        selectedRegion={selectedRegion === '전체' ? '부산 전체' : selectedRegion.startsWith('부산') ? selectedRegion : `부산 ${selectedRegion}`}
-        onSelectRegion={setSelectedRegion}
-        user={user}
-        onOpenSearch={() => setActiveTab('discover')}
-        onOpenProfile={() => setActiveTab('mybusan')}
-        onOpenAiGenerator={() => setIsAiModalOpen(true)}
-      />
+    <div className="min-h-screen bg-stone-50 text-stone-900 flex flex-col antialiased selection:bg-rose-500 selection:text-white">
+      {/* ======================================================== */}
+      {/* 1. DESKTOP WEBSITE MODE (Full Web Page Layout)           */}
+      {/* ======================================================== */}
+      {!isMockupMode ? (
+        <div className="w-full min-h-screen flex flex-col bg-stone-50">
+          {/* Top Web Navbar */}
+          <WebNavbar
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
+            selectedRegion={selectedRegion}
+            onSelectRegion={setSelectedRegion}
+            user={user}
+            savedCount={savedSpotsCount}
+            onOpenAiGenerator={() => setIsAiModalOpen(true)}
+            aiLoading={aiLoading}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onLogout={handleLogout}
+            onToggleViewMode={() => setIsMockupMode(true)}
+            isMockupMode={false}
+          />
 
-      {/* Main Screen Views */}
-      {activeTab === 'home' && (
-        <HomeScreen
-          spots={spots}
-          selectedRegion={selectedRegion}
-          onSelectRegion={setSelectedRegion}
-          onSelectSpot={setSelectedSpot}
-          onToggleSave={handleToggleSave}
-          onToggleVisited={handleToggleVisited}
+          {/* Centered Web Content Container */}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+            {activeTab === 'home' && (
+              <HomeScreen
+                spots={spots}
+                selectedRegion={selectedRegion}
+                onSelectRegion={setSelectedRegion}
+                onSelectSpot={setSelectedSpot}
+                onToggleSave={handleToggleSave}
+                onToggleVisited={handleToggleVisited}
+                onOpenAiGenerator={() => setIsAiModalOpen(true)}
+                isWebMode={true}
+              />
+            )}
+
+            {activeTab === 'discover' && (
+              <DiscoverScreen
+                spots={spots}
+                onSelectSpot={setSelectedSpot}
+                onToggleSave={handleToggleSave}
+                onToggleVisited={handleToggleVisited}
+                onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
+                onGoToMap={() => setActiveTab('map')}
+                isWebMode={true}
+              />
+            )}
+
+            {activeTab === 'map' && (
+              <MapScreen
+                spots={spots}
+                onSelectSpot={setSelectedSpot}
+                onToggleSave={handleToggleSave}
+                onToggleVisited={handleToggleVisited}
+                onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
+                isWebMode={true}
+              />
+            )}
+
+            {activeTab === 'mybusan' && (
+              <MyBusanScreen
+                user={user}
+                spots={spots}
+                onSelectSpot={setSelectedSpot}
+                onToggleVisited={handleToggleVisited}
+                onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
+                onGoToMap={() => setActiveTab('map')}
+                onUpdateProfile={handleUpdateProfile}
+                onOpenAuth={() => setIsAuthModalOpen(true)}
+                onLogout={handleLogout}
+                isWebMode={true}
+              />
+            )}
+          </main>
+
+          {/* Web Footer */}
+          <WebFooter
+            onSelectRegion={setSelectedRegion}
+            onOpenAiGenerator={() => setIsAiModalOpen(true)}
+          />
+        </div>
+      ) : (
+        <PhoneMockupFrame
           onOpenAiGenerator={() => setIsAiModalOpen(true)}
-        />
+          aiLoading={aiLoading}
+          onToggleViewMode={() => setIsMockupMode(false)}
+        >
+          {/* Mobile App Header */}
+          <AppHeader
+            title={getHeaderTitle()}
+            selectedRegion={
+              selectedRegion === '전체'
+                ? '부산 전체'
+                : selectedRegion.startsWith('부산')
+                ? selectedRegion
+                : `부산 ${selectedRegion}`
+            }
+            onSelectRegion={setSelectedRegion}
+            user={user}
+            onOpenSearch={() => setActiveTab('discover')}
+            onOpenProfile={() => setActiveTab('mybusan')}
+            onOpenAiGenerator={() => setIsAiModalOpen(true)}
+          />
+
+          {/* Main Mobile Screen Views */}
+          {activeTab === 'home' && (
+            <HomeScreen
+              spots={spots}
+              selectedRegion={selectedRegion}
+              onSelectRegion={setSelectedRegion}
+              onSelectSpot={setSelectedSpot}
+              onToggleSave={handleToggleSave}
+              onToggleVisited={handleToggleVisited}
+              onOpenAiGenerator={() => setIsAiModalOpen(true)}
+              isWebMode={false}
+            />
+          )}
+
+          {activeTab === 'discover' && (
+            <DiscoverScreen
+              spots={spots}
+              onSelectSpot={setSelectedSpot}
+              onToggleSave={handleToggleSave}
+              onToggleVisited={handleToggleVisited}
+              onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
+              onGoToMap={() => setActiveTab('map')}
+              isWebMode={false}
+            />
+          )}
+
+          {activeTab === 'map' && (
+            <MapScreen
+              spots={spots}
+              onSelectSpot={setSelectedSpot}
+              onToggleSave={handleToggleSave}
+              onToggleVisited={handleToggleVisited}
+              onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
+              isWebMode={false}
+            />
+          )}
+
+          {activeTab === 'mybusan' && (
+            <MyBusanScreen
+              user={user}
+              spots={spots}
+              onSelectSpot={setSelectedSpot}
+              onToggleVisited={handleToggleVisited}
+              onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
+              onGoToMap={() => setActiveTab('map')}
+              onUpdateProfile={handleUpdateProfile}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onLogout={handleLogout}
+              isWebMode={false}
+            />
+          )}
+
+          {/* Mobile Bottom Navigation */}
+          <BottomNav
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
+            savedCount={savedSpotsCount}
+          />
+        </PhoneMockupFrame>
       )}
 
-      {activeTab === 'discover' && (
-        <DiscoverScreen
-          spots={spots}
-          onSelectSpot={setSelectedSpot}
-          onToggleSave={handleToggleSave}
-          onToggleVisited={handleToggleVisited}
-          onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
-          onGoToMap={() => setActiveTab('map')}
-        />
-      )}
-
-      {activeTab === 'map' && (
-        <MapScreen
-          spots={spots}
-          onSelectSpot={setSelectedSpot}
-          onToggleSave={handleToggleSave}
-          onToggleVisited={handleToggleVisited}
-          onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
-        />
-      )}
-
-      {activeTab === 'mybusan' && (
-        <MyBusanScreen
-          user={user}
-          spots={spots}
-          onSelectSpot={setSelectedSpot}
-          onToggleVisited={handleToggleVisited}
-          onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
-          onGoToMap={() => setActiveTab('map')}
-          onUpdateProfile={handleUpdateProfile}
-          onOpenAuth={() => setIsAuthModalOpen(true)}
-          onLogout={handleLogout}
-        />
-      )}
-
-      {/* Mobile App Bottom Navigation */}
-      <BottomNav
-        activeTab={activeTab}
-        onChangeTab={setActiveTab}
-        savedCount={spots.filter((s) => s.isSaved && !s.isVisited).length}
-      />
+      {/* ======================================================== */}
+      {/* 3. MODALS (Accessible in both Web and Mockup mode)       */}
+      {/* ======================================================== */}
 
       {/* Auth Modal (Login & Sign-Up on initial launch) */}
       <AuthModal
@@ -353,6 +459,6 @@ export default function App() {
           onClose={() => setIsAiModalOpen(false)}
         />
       )}
-    </PhoneMockupFrame>
+    </div>
   );
 }
