@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { INITIAL_SPOTS, INITIAL_USER } from './data/initialSpots';
 import { Spot, UserProfile } from './types';
 import { PhoneMockupFrame } from './components/PhoneMockupFrame';
@@ -11,18 +11,64 @@ import { MyBusanScreen } from './components/MyBusanScreen';
 import { SpotDetailModal } from './components/SpotDetailModal';
 import { VisitedPlacesModal } from './components/VisitedPlacesModal';
 import { AiRecommendModal } from './components/AiRecommendModal';
+import { AuthModal } from './components/AuthModal';
+import { VisitedReviewModal } from './components/VisitedReviewModal';
+import {
+  getSavedSession,
+  logoutUser,
+  saveSessionLocally,
+  saveSpotReview,
+  fetchSpotReviews,
+  deleteSpotReview,
+} from './lib/supabase';
 
 export default function App() {
   const [spots, setSpots] = useState<Spot[]>(INITIAL_SPOTS);
-  const [user, setUser] = useState<UserProfile>(INITIAL_USER);
+  const [user, setUser] = useState<UserProfile>(() => {
+    const saved = getSavedSession();
+    return saved || INITIAL_USER;
+  });
   const [activeTab, setActiveTab] = useState<NavTab>('home');
-  const [selectedRegion, setSelectedRegion] = useState<string>('부산 영도구 / 전포동');
+  const [selectedRegion, setSelectedRegion] = useState<string>('전체');
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
 
   // Modals state
   const [isVisitedManagerOpen, setIsVisitedManagerOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [reviewSpot, setReviewSpot] = useState<Spot | null>(null);
+
+  // 초기 실행 시 저장된 세션이 없으면 로그인/회원가입 창 띄우기
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => {
+    return !getSavedSession();
+  });
+
+  // Supabase 및 로컬에 저장된 '가봤어요' 리뷰 데이터 로드 & 스팟에 동기화
+  useEffect(() => {
+    async function loadReviews() {
+      try {
+        const reviews = await fetchSpotReviews();
+        if (reviews && Object.keys(reviews).length > 0) {
+          setSpots((prev) =>
+            prev.map((spot) => {
+              const review = reviews[spot.id];
+              if (review) {
+                return {
+                  ...spot,
+                  isVisited: true,
+                  myReview: review,
+                };
+              }
+              return spot;
+            })
+          );
+        }
+      } catch (err) {
+        console.warn('Failed to load spot reviews:', err);
+      }
+    }
+    loadReviews();
+  }, []);
 
   // Toggle spot save state
   const handleToggleSave = (spotId: string, e?: React.MouseEvent) => {
@@ -40,29 +86,95 @@ export default function App() {
     });
   };
 
-  // Toggle visited spot (which excludes it from recommendation)
+  // '가봤어요' 클릭 시: 별점 및 한줄평을 작성하는 모달 열기
   const handleToggleVisited = (spotId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const target = spots.find((s) => s.id === spotId);
     if (!target) return;
+    setReviewSpot(target);
+  };
 
-    const willBeVisited = !target.isVisited;
+  // 별점 및 한줄평 저장 핸들러 (Supabase & Local)
+  const handleSaveReview = async (reviewInput: { rating: number; comment: string }) => {
+    if (!reviewSpot) return;
+
+    const result = await saveSpotReview({
+      spotId: reviewSpot.id,
+      spotName: reviewSpot.name,
+      userId: user.id || 'guest',
+      userName: user.name,
+      userAvatar: user.avatarUrl,
+      rating: reviewInput.rating,
+      comment: reviewInput.comment,
+    });
+
+    const updatedReview = result.review;
+
+    // 스팟 상태 갱신
     setSpots((prev) =>
-      prev.map((s) => (s.id === spotId ? { ...s, isVisited: willBeVisited } : s))
+      prev.map((s) =>
+        s.id === reviewSpot.id
+          ? { ...s, isVisited: true, myReview: updatedReview }
+          : s
+      )
     );
 
+    // 상세 모달이 열려있다면 상세 모달도 갱신
+    if (selectedSpot && selectedSpot.id === reviewSpot.id) {
+      setSelectedSpot((prev) =>
+        prev ? { ...prev, isVisited: true, myReview: updatedReview } : null
+      );
+    }
+
+    // 유저 프로필 탐험 통계 갱신
     setUser((prev) => {
       const currentVisited = prev.visitedPlaces || [];
-      const updatedList = willBeVisited
-        ? [...currentVisited, target.name]
-        : currentVisited.filter((name) => name !== target.name);
+      const updatedList = currentVisited.includes(reviewSpot.name)
+        ? currentVisited
+        : [...currentVisited, reviewSpot.name];
 
-      return {
+      const updatedUser = {
         ...prev,
         visitedPlaces: updatedList,
         excludedVisitedCount: updatedList.length,
-        discoveredCount: willBeVisited ? prev.discoveredCount + 1 : Math.max(0, prev.discoveredCount - 1),
+        discoveredCount: prev.discoveredCount + (reviewSpot.isVisited ? 0 : 1),
       };
+      saveSessionLocally(updatedUser);
+      return updatedUser;
+    });
+  };
+
+  // '가봤어요' 및 리뷰 삭제/취소 핸들러
+  const handleDeleteReview = async () => {
+    if (!reviewSpot) return;
+
+    await deleteSpotReview(reviewSpot.id, user.id);
+
+    setSpots((prev) =>
+      prev.map((s) =>
+        s.id === reviewSpot.id
+          ? { ...s, isVisited: false, myReview: undefined }
+          : s
+      )
+    );
+
+    if (selectedSpot && selectedSpot.id === reviewSpot.id) {
+      setSelectedSpot((prev) =>
+        prev ? { ...prev, isVisited: false, myReview: undefined } : null
+      );
+    }
+
+    setUser((prev) => {
+      const currentVisited = prev.visitedPlaces || [];
+      const updatedList = currentVisited.filter((name) => name !== reviewSpot.name);
+      const updatedUser = {
+        ...prev,
+        visitedPlaces: updatedList,
+        excludedVisitedCount: updatedList.length,
+        discoveredCount: Math.max(0, prev.discoveredCount - 1),
+      };
+      saveSessionLocally(updatedUser);
+      return updatedUser;
     });
   };
 
@@ -86,10 +198,26 @@ export default function App() {
 
   // Update user profile
   const handleUpdateProfile = (updated: Partial<UserProfile>) => {
-    setUser((prev) => ({
-      ...prev,
-      ...updated,
-    }));
+    setUser((prev) => {
+      const merged = {
+        ...prev,
+        ...updated,
+      };
+      saveSessionLocally(merged);
+      return merged;
+    });
+  };
+
+  // Auth Handlers
+  const handleAuthSuccess = (authenticatedUser: UserProfile) => {
+    setUser(authenticatedUser);
+    setIsAuthModalOpen(false);
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    setUser(INITIAL_USER);
+    setIsAuthModalOpen(true);
   };
 
   // Determine header title based on active tab
@@ -116,7 +244,7 @@ export default function App() {
       {/* Mobile App Header */}
       <AppHeader
         title={getHeaderTitle()}
-        selectedRegion={selectedRegion}
+        selectedRegion={selectedRegion === '전체' ? '부산 전체' : selectedRegion.startsWith('부산') ? selectedRegion : `부산 ${selectedRegion}`}
         onSelectRegion={setSelectedRegion}
         user={user}
         onOpenSearch={() => setActiveTab('discover')}
@@ -128,8 +256,8 @@ export default function App() {
       {activeTab === 'home' && (
         <HomeScreen
           spots={spots}
-          selectedRegion={selectedRegion.includes('전체') ? '전체' : selectedRegion.split(' ')[1] || '전체'}
-          onSelectRegion={(reg) => setSelectedRegion(reg === '전체' ? '부산 전체' : `부산 ${reg}`)}
+          selectedRegion={selectedRegion}
+          onSelectRegion={setSelectedRegion}
           onSelectSpot={setSelectedSpot}
           onToggleSave={handleToggleSave}
           onToggleVisited={handleToggleVisited}
@@ -167,6 +295,8 @@ export default function App() {
           onOpenVisitedManager={() => setIsVisitedManagerOpen(true)}
           onGoToMap={() => setActiveTab('map')}
           onUpdateProfile={handleUpdateProfile}
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+          onLogout={handleLogout}
         />
       )}
 
@@ -175,6 +305,13 @@ export default function App() {
         activeTab={activeTab}
         onChangeTab={setActiveTab}
         savedCount={spots.filter((s) => s.isSaved && !s.isVisited).length}
+      />
+
+      {/* Auth Modal (Login & Sign-Up on initial launch) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onSuccess={handleAuthSuccess}
+        onSkip={() => setIsAuthModalOpen(false)}
       />
 
       {/* Spot Detail Modal */}
@@ -193,6 +330,18 @@ export default function App() {
           visitedList={user.visitedPlaces}
           onUpdateVisitedList={handleUpdateVisitedList}
           onClose={() => setIsVisitedManagerOpen(false)}
+        />
+      )}
+
+      {/* '가봤어요' 별점 & 한줄평 Supabase 작성/수정 모달 */}
+      {reviewSpot && (
+        <VisitedReviewModal
+          spot={reviewSpot}
+          user={user}
+          isOpen={Boolean(reviewSpot)}
+          onClose={() => setReviewSpot(null)}
+          onSaveReview={handleSaveReview}
+          onDeleteReview={handleDeleteReview}
         />
       )}
 

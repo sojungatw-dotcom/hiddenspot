@@ -110,7 +110,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
 
         {minScoreFilter && (
           <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-stone-900 text-white text-[11px] font-semibold shrink-0">
-            <span>최소 Hidden Score: {minScoreFilter}점+</span>
+            <span>히든 스코어 {minScoreFilter}점 이상</span>
             <button
               onClick={() => setMinScoreFilter(null)}
               className="hover:text-rose-400 ml-0.5 cursor-pointer"
@@ -148,7 +148,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                 : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            급상승순 ▲
+            인기순 ▲
           </button>
           <button
             onClick={() => setSortBy('score')}
@@ -158,7 +158,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                 : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            Hidden Score 높은순
+            점수 높은순
           </button>
           <button
             onClick={() => setSortBy('distance')}
@@ -168,7 +168,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
                 : 'text-stone-500 hover:text-stone-900'
             }`}
           >
-            거리 가까운순
+            거리순
           </button>
         </div>
 
@@ -183,10 +183,10 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
         className="bg-amber-50/80 border border-amber-200/60 rounded-xl px-3 py-2 flex items-center justify-between text-xs text-amber-900 cursor-pointer hover:bg-amber-100/70 transition-colors shadow-xs"
       >
         <span className="text-[11px] font-medium truncate">
-          방문했던 명소 <strong className="text-rose-600 font-bold">18곳</strong>은 추천에서 제외 중입니다
+          이미 가본 명소 <strong className="text-rose-600 font-bold">18곳</strong>은 추천에서 제외했어요
         </span>
         <span className="text-[11px] font-bold text-stone-700 flex items-center shrink-0 ml-2">
-          방문 목록 관리 <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+          가본 곳 관리 <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
         </span>
       </div>
 
@@ -271,10 +271,20 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
               <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs">
                 <button
                   onClick={(e) => onToggleVisited(spot.id, e)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200/80 text-stone-700 text-[11px] font-medium transition-colors cursor-pointer"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer border ${
+                    spot.isVisited
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold'
+                      : 'bg-stone-100 hover:bg-stone-200/80 text-stone-700 border-transparent'
+                  }`}
                 >
-                  <Check className="w-3.5 h-3.5 text-stone-500" />
-                  <span>가봤어요 (추천 제외)</span>
+                  <Check className={`w-3.5 h-3.5 ${spot.isVisited ? 'text-emerald-600' : 'text-stone-500'}`} />
+                  <span>
+                    {spot.isVisited
+                      ? spot.myReview
+                        ? `★ ${spot.myReview.rating}.0 다녀옴`
+                        : '다녀온 곳'
+                      : '가봤어요 (추천 제외)'}
+                  </span>
                 </button>
 
                 <button

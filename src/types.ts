@@ -11,6 +11,18 @@ export interface EditorTip {
   description: string;
 }
 
+export interface SpotReview {
+  id?: string;
+  spotId: string;
+  spotName: string;
+  userId?: string;
+  userName?: string;
+  userAvatar?: string;
+  rating: number; // 1 to 5
+  comment: string; // 한줄평
+  createdAt: string; // ISO string
+}
+
 export interface Spot {
   id: string;
   name: string;
@@ -39,11 +51,14 @@ export interface Spot {
   images: string[];
   isSaved: boolean;
   isVisited: boolean; // if user checked "가봤어요"
+  myReview?: SpotReview; // 사용자가 남긴 별점과 한줄평
   mapPosition: { x: number; y: number }; // Relative coordinates 0-100 for custom interactive map
   aiGenerated?: boolean;
 }
 
 export interface UserProfile {
+  id?: string;
+  email?: string;
   name: string;
   level: number;
   levelTitle: string;

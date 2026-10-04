@@ -123,10 +123,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({
         >
           <div className="flex items-center gap-1.5 truncate">
             <Check className="w-3 h-3 text-emerald-600 stroke-[3px]" />
-            <span>가본 명소 <strong className="font-extrabold text-stone-900">18곳</strong>은 지도에서 자동 숨김 중</span>
+            <span>가본 곳 <strong className="font-extrabold text-stone-900">18곳</strong>은 지도에서 제외 중</span>
           </div>
           <span className="text-[10px] font-bold text-amber-700 underline shrink-0 ml-2">
-            변경
+            관리
           </span>
         </div>
       </div>
@@ -344,11 +344,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({
             </div>
           </div>
 
-          {/* AI Match Callout Box */}
+          {/* Spot Recommendation Reason Box */}
           <div className="bg-amber-50 rounded-xl p-2.5 border border-amber-200/60 text-stone-800 text-xs flex items-start gap-2 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-rose-500 mt-1 shrink-0" />
             <p className="text-[11px] leading-snug">
-              <strong className="font-extrabold text-stone-900">미방문 스팟</strong> · 회원님의 '조용한 바다 뷰 서점' 취향 키워드와 <strong className="font-extrabold text-rose-600">{selectedSpot.matchRate}%</strong> 일치합니다.
+              {selectedSpot.matchReason || `내 취향과 ${selectedSpot.matchRate}% 잘 맞는 곳이에요.`}
             </p>
           </div>
 
@@ -380,18 +380,28 @@ export const MapScreen: React.FC<MapScreenProps> = ({
           <div className="grid grid-cols-3 gap-2 pt-1">
             <button
               onClick={(e) => onToggleVisited(selectedSpot.id, e)}
-              className="py-2.5 px-2 rounded-xl bg-stone-100 hover:bg-stone-200/80 text-stone-700 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border border-stone-200/60"
+              className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border ${
+                selectedSpot.isVisited
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                  : 'bg-stone-100 hover:bg-stone-200/80 text-stone-700 border-stone-200/60'
+              }`}
             >
-              <Check className="w-3.5 h-3.5 text-stone-500" />
-              <span>가봤어요</span>
+              <Check className={`w-3.5 h-3.5 ${selectedSpot.isVisited ? 'text-emerald-600' : 'text-stone-500'}`} />
+              <span>
+                {selectedSpot.isVisited
+                  ? selectedSpot.myReview
+                    ? `★ ${selectedSpot.myReview.rating}.0 다녀옴`
+                    : '다녀온 곳'
+                  : '가봤어요'}
+              </span>
             </button>
 
             <button
-              onClick={() => alert(`${selectedSpot.name} 길찾기 (부산역에서 82번 버스 이용)`)}
+              onClick={() => onSelectSpot(selectedSpot)}
               className="py-2.5 px-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border border-sky-200"
             >
               <Navigation className="w-3.5 h-3.5" />
-              <span>길찾기</span>
+              <span>길찾기 안내</span>
             </button>
 
             <button

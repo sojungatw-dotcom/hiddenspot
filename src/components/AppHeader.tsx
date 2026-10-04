@@ -24,30 +24,27 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const [showRegionDropdown, setShowRegionDropdown] = useState(false);
 
   const regionOptions = [
-    '부산 전체',
-    '부산 영도구 / 전포동',
-    '영도구 (봉래산·흰여울)',
-    '부산진구 (전포 사잇길)',
-    '수영구 (망미 골목)',
-    '동구 (초량 이바구길)',
-    '해운대구 (청사포 포구)',
-    '기장군 (송정 해안가)',
+    { label: '부산 전체', value: '전체' },
+    { label: '영도구 (봉래산·흰여울)', value: '영도구' },
+    { label: '전포·서면 (전포 사잇길)', value: '전포·서면' },
+    { label: '망미동 (망미 골목)', value: '망미동' },
+    { label: '동구·초량 (초량 이바구길)', value: '동구·초량' },
+    { label: '해운대·청사포 (청사포 포구)', value: '해운대·청사포' },
+    { label: '기장·송정 (송정 해안가)', value: '기장·송정' },
   ];
 
   return (
     <div className="w-full bg-white border-b border-stone-100 px-4 pt-2 pb-2.5 z-30 shrink-0 select-none">
       <div className="flex items-center justify-between">
         {/* Left: Stamp Logo & Location Bar */}
-        <div className="flex items-center gap-2.5">
-          {/* Brand Logo Pin from user image */}
-          <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-white border border-stone-200/80 p-0.5 overflow-hidden shadow-xs hover:border-rose-300 transition-all cursor-pointer">
-            <img
-              src="/logo.jpg"
-              alt="Hidden Spot IN BUSAN"
-              className="w-full h-full object-contain"
-              referrerPolicy="no-referrer"
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          {/* Brand Logo - 네모 박스/테두리/그림자 없이 이미지 자체만 표시 */}
+          <img
+            src="/logo.jpg"
+            alt="Hidden Spot IN BUSAN"
+            className="h-10 w-auto max-w-[46px] object-contain shrink-0 cursor-pointer"
+            referrerPolicy="no-referrer"
+          />
 
           {/* Region selector & View title */}
           <div className="relative">
@@ -72,21 +69,32 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 />
                 <div className="absolute left-0 top-6 mt-1 w-52 bg-white rounded-xl shadow-xl border border-stone-100 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="text-[10px] font-medium text-stone-400 px-2.5 py-1">탐험 지역 선택</div>
-                  {regionOptions.map((region) => (
-                    <button
-                      key={region}
-                      onClick={() => {
-                        onSelectRegion(region === '부산 전체' ? '전체' : region.split(' ')[1] || region);
-                        setShowRegionDropdown(false);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs hover:bg-rose-50 hover:text-rose-600 transition-colors flex items-center justify-between text-stone-700 font-medium cursor-pointer"
-                    >
-                      <span>{region}</span>
-                      {selectedRegion.includes(region.split(' ')[1] || '') && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                      )}
-                    </button>
-                  ))}
+                  {regionOptions.map((opt) => {
+                    const isActive =
+                      selectedRegion === opt.value ||
+                      (selectedRegion === '전체' && opt.value === '전체') ||
+                      (selectedRegion === '부산 전체' && opt.value === '전체') ||
+                      selectedRegion.includes(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          onSelectRegion(opt.value);
+                          setShowRegionDropdown(false);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-between font-medium cursor-pointer ${
+                          isActive
+                            ? 'bg-rose-50 text-rose-600 font-bold'
+                            : 'hover:bg-stone-50 text-stone-700'
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {isActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}

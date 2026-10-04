@@ -1,5 +1,21 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Share2, Bookmark, Check, Navigation, Sparkles, Clock, Bus, Coffee, MapPin, Copy } from 'lucide-react';
+import {
+  ChevronLeft,
+  Share2,
+  Bookmark,
+  Check,
+  Navigation,
+  Sparkles,
+  Clock,
+  Bus,
+  Coffee,
+  MapPin,
+  Copy,
+  Star,
+  MessageSquare,
+  Edit3,
+  Database,
+} from 'lucide-react';
 import { Spot } from '../types';
 
 interface SpotDetailModalProps {
@@ -136,17 +152,17 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           </div>
         </div>
 
-        {/* HIDDEN SCORE 종합 분석 (Image 9 style) */}
+        {/* 히든 스팟 점수 분석 */}
         <div className="mx-4 bg-amber-50/60 rounded-3xl p-4 border border-amber-200/60 space-y-3.5 shadow-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className="text-sm">✦</span>
               <h3 className="text-xs font-black uppercase tracking-wider text-stone-900">
-                HIDDEN SCORE 종합 분석
+                히든 스팟 점수
               </h3>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 text-[10px] font-bold">
-              신뢰도 98%
+              로컬 검증
             </span>
           </div>
 
@@ -154,15 +170,15 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           <div className="bg-rose-500 rounded-2xl p-3 text-white flex items-center justify-between shadow-md">
             <div>
               <div className="text-[11px] font-medium text-rose-100">
-                {spot.scoreLabel || '발견하기 좋은 숨은 스팟'}
+                {spot.scoreLabel || '숨은 로컬 스팟'}
               </div>
               <div className="text-2xl font-black tracking-tight mt-0.5">
                 {spot.hiddenScore} <span className="text-sm font-normal text-rose-200">/ 100</span>
               </div>
             </div>
             <div className="text-right text-[11px] text-rose-100 font-medium">
-              <div>외지인 비율 {spot.touristRatio}</div>
-              <div>재방문 만족도 {spot.localRevisitScore}점</div>
+              <div>관광객 비율 {spot.touristRatio}</div>
+              <div>재방문 의향 {spot.localRevisitScore}%</div>
             </div>
           </div>
 
@@ -171,7 +187,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
             {/* 1. 리뷰 희소성 */}
             <div className="space-y-1">
               <div className="flex justify-between text-xs font-bold text-stone-800">
-                <span>리뷰 희소성 (Hidden Value)</span>
+                <span>희소성</span>
                 <span className="text-rose-600 font-extrabold">{spot.scoreBreakdown.rarity}점</span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-amber-200/50 overflow-hidden">
@@ -181,14 +197,14 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                 />
               </div>
               <p className="text-[10px] text-stone-500">
-                대중 SNS 언급량은 적으나 부산 로컬 평가단이 극찬한 은밀한 장소
+                SNS에는 덜 알려진 고요한 로컬 장소
               </p>
             </div>
 
             {/* 2. 만족도 및 품질 */}
             <div className="space-y-1">
               <div className="flex justify-between text-xs font-bold text-stone-800">
-                <span>만족도 및 품질 (Quality)</span>
+                <span>만족도</span>
                 <span className="text-rose-600 font-extrabold">{spot.scoreBreakdown.quality}점</span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-amber-200/50 overflow-hidden">
@@ -198,14 +214,14 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                 />
               </div>
               <p className="text-[10px] text-stone-500">
-                실제 방문자 평점 4.92 이상, 로컬의 재방문 의향 96% 기록
+                다녀온 사람들의 재방문 만족도가 높은 곳
               </p>
             </div>
 
             {/* 3. 최근 성장성 */}
             <div className="space-y-1">
               <div className="flex justify-between text-xs font-bold text-stone-800">
-                <span>최근 성장성 (Growth)</span>
+                <span>관심도</span>
                 <span className="text-rose-600 font-extrabold">{spot.scoreBreakdown.growth}점</span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-amber-200/50 overflow-hidden">
@@ -215,14 +231,14 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                 />
               </div>
               <p className="text-[10px] text-stone-500">
-                최근 30일 간 트렌드 세터 및 로컬 보관함 저장량 급증
+                최근 여행자들의 저장이 늘어나는 중
               </p>
             </div>
 
             {/* 4. 신선도 보정 */}
             <div className="space-y-1">
               <div className="flex justify-between text-xs font-bold text-stone-800">
-                <span>신선도 보정 (Freshness)</span>
+                <span>공간 고유성</span>
                 <span className="text-rose-600 font-extrabold">{spot.scoreBreakdown.freshness}점</span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-amber-200/50 overflow-hidden">
@@ -232,18 +248,18 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                 />
               </div>
               <p className="text-[10px] text-stone-500">
-                일시적 바이럴이 아닌 고유한 정체성을 지닌 지속 가능한 스팟
+                유행을 타지 않고 정체성이 뚜렷한 아지트
               </p>
             </div>
           </div>
         </div>
 
-        {/* 왜 나에게 추천되었나요? (3 AI Verified Reasons) */}
+        {/* 이곳을 추천하는 이유 */}
         <div className="mx-4 bg-white rounded-3xl p-4 border border-stone-100 shadow-xs space-y-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-rose-500" />
             <h3 className="text-sm font-extrabold text-stone-900">
-              왜 나에게 추천되었나요?
+              이곳을 추천하는 이유
             </h3>
           </div>
 
@@ -259,14 +275,14 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           </div>
         </div>
 
-        {/* 로컬 에디터 추천 팁 (2024.11 업데이트) */}
+        {/* 에디터 꿀팁 */}
         <div className="mx-4 bg-white rounded-3xl p-4 border border-stone-100 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-extrabold text-stone-900">
-              로컬 에디터 추천 팁
+              에디터 꿀팁
             </h3>
             <span className="text-[10px] text-stone-400 font-medium">
-              2024.11 최신 검증
+              최근 확인
             </span>
           </div>
 
@@ -288,6 +304,63 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
             ))}
           </div>
         </div>
+
+        {/* 나의 방문 별점 & 한줄평 기록 (Supabase 연동) */}
+        {spot.isVisited && (
+          <div className="mx-4 bg-emerald-50/70 rounded-3xl p-4 border border-emerald-200/70 shadow-xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">
+                  <Check className="w-3 h-3 stroke-[3px]" />
+                </div>
+                <h3 className="text-xs font-black text-emerald-950">
+                  내가 남긴 방문 평가 & 한줄평
+                </h3>
+              </div>
+              <button
+                onClick={() => onToggleVisited(spot.id)}
+                className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-white px-2 py-0.5 rounded-full border border-emerald-200 cursor-pointer shadow-2xs"
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>수정하기</span>
+              </button>
+            </div>
+
+            {/* Rating Stars & Score */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`w-4 h-4 ${
+                      star <= (spot.myReview?.rating || 5)
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'fill-stone-200 text-stone-300'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs font-black text-amber-600">
+                {(spot.myReview?.rating || 5)}.0점
+              </span>
+              <div className="flex items-center gap-1 text-[10px] text-emerald-700 ml-auto font-medium">
+                <Database className="w-3 h-3 text-emerald-600" />
+                <span>Supabase 저장됨</span>
+              </div>
+            </div>
+
+            {/* Comment */}
+            {spot.myReview?.comment ? (
+              <div className="bg-white/90 p-3 rounded-2xl border border-emerald-100 text-xs text-stone-800 leading-relaxed font-medium">
+                "{spot.myReview.comment}"
+              </div>
+            ) : (
+              <p className="text-[11px] text-stone-500 italic">
+                한줄평 없이 방문 체크된 장소예요. '수정하기'를 눌러 한줄평을 남겨보세요!
+              </p>
+            )}
+          </div>
+        )}
 
         {/* 위치 및 주변 거리 */}
         <div className="mx-4 bg-white rounded-3xl p-4 border border-stone-100 shadow-xs space-y-2.5">
@@ -322,7 +395,13 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
           }`}
         >
           <Check className="w-4 h-4" />
-          <span>{spot.isVisited ? '다녀온 곳' : '가봤어요'}</span>
+          <span>
+            {spot.isVisited
+              ? spot.myReview
+                ? `★ ${spot.myReview.rating}.0 가봤어요`
+                : '다녀온 곳'
+              : '가봤어요'}
+          </span>
         </button>
 
         {/* 길찾기 Button */}

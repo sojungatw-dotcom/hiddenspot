@@ -68,10 +68,10 @@ export const VisitedPlacesModal: React.FC<VisitedPlacesModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-stone-900">
-                내가 이미 가본 부산 명소 관리
+                가본 곳 관리
               </h3>
               <p className="text-[11px] text-stone-500">
-                체크된 곳은 모든 AI 추천과 지도에서 자동 제외됩니다.
+                체크한 곳은 추천 목록과 지도에서 제외돼요.
               </p>
             </div>
           </div>
@@ -89,7 +89,7 @@ export const VisitedPlacesModal: React.FC<VisitedPlacesModalProps> = ({
           {/* Status Counter */}
           <div className="bg-amber-50 rounded-2xl p-3 border border-amber-200/60 flex items-center justify-between text-xs">
             <span className="text-amber-900 font-medium">
-              현재 제외 설정된 기방문 장소
+              추천에서 제외 중인 곳
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-black text-xs">
               {visitedList.length}곳 제외 중
@@ -102,7 +102,7 @@ export const VisitedPlacesModal: React.FC<VisitedPlacesModalProps> = ({
               type="text"
               value={newPlaceInput}
               onChange={(e) => setNewPlaceInput(e.target.value)}
-              placeholder="직접 가본 곳 입력 (예: 영도 피아크, 전포 카페거리)"
+              placeholder="가본 곳 직접 입력 (예: 영도 피아크, 전포 카페거리)"
               className="flex-1 px-3 py-2 bg-stone-100 rounded-xl text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500/30 font-medium"
             />
             <button
@@ -117,7 +117,7 @@ export const VisitedPlacesModal: React.FC<VisitedPlacesModalProps> = ({
           {/* Preset Tourist Spots Checklist */}
           <div className="space-y-2">
             <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-              부산 대표 관광지 (클릭하여 기방문 체크)
+              주요 명소 (다녀온 곳을 체크하세요)
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

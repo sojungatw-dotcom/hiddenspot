@@ -25,8 +25,8 @@ export const AiRecommendModal: React.FC<AiRecommendModalProps> = ({
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([
     {
       role: 'assistant',
-      text: `반갑습니다! 부산 4회차 이상 여행자 전담 AI 로컬 큐레이터입니다.
-해운대나 광안리 같은 유명 관광지는 제외하고, 영도 산복도로 골목이나 전포 뒷골목, 초량 적산가옥처럼 부산 현지인들만 아는 히든 스팟을 추천해드릴게요. 오늘 어떤 분위기의 장소를 찾고 계신가요?`,
+      text: `안녕하세요! 부산 구석구석 숨은 로컬 스팟을 추천해드릴게요.
+해운대나 광안리 같은 뻔한 곳 말고, 오늘 어떤 분위기의 장소를 가보고 싶으신가요?`,
     },
   ]);
   const [chatLoading, setChatLoading] = useState(false);
@@ -117,10 +117,10 @@ export const AiRecommendModal: React.FC<AiRecommendModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-stone-900">
-                Gemini AI 히든 스팟 추천 엔진
+                로컬 스팟 맞춤 추천
               </h3>
               <p className="text-[11px] text-stone-500">
-                부산 N차 방문자 전담 · Hidden Score 알고리즘
+                취향과 가본 곳을 반영한 로컬 추천
               </p>
             </div>
           </div>
@@ -143,7 +143,7 @@ export const AiRecommendModal: React.FC<AiRecommendModalProps> = ({
                 : 'border-transparent text-stone-500 hover:text-stone-800'
             }`}
           >
-            취향 기반 즉시 발굴
+            취향 맞춤 추천
           </button>
           <button
             onClick={() => setActiveMode('chat')}
@@ -154,7 +154,7 @@ export const AiRecommendModal: React.FC<AiRecommendModalProps> = ({
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>AI 로컬 에디터와 대화</span>
+            <span>로컬 에디터와 대화</span>
           </button>
         </div>
 
@@ -163,12 +163,12 @@ export const AiRecommendModal: React.FC<AiRecommendModalProps> = ({
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Notification */}
             <div className="bg-amber-50/80 border border-amber-200/60 rounded-2xl p-3 text-[11px] text-amber-900 leading-relaxed">
-              💡 회원님이 등록하신 <strong className="font-bold text-rose-600">{visitedList.length}곳</strong>의 기방문 명소는 추천 후보에서 엄격하게 제외됩니다.
+              💡 이미 다녀온 <strong className="font-bold text-rose-600">{visitedList.length}곳</strong>은 추천에서 제외돼요.
             </div>
 
             {/* Region Selection */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-stone-700">탐험 희망 지역</label>
+              <label className="text-xs font-bold text-stone-700">찾으시는 지역</label>
               <div className="grid grid-cols-3 gap-1.5">
                 {['전체', '영도구', '전포·서면', '망미동', '동구·초량', '기장·송정'].map((reg) => (
                   <button
@@ -190,7 +190,7 @@ export const AiRecommendModal: React.FC<AiRecommendModalProps> = ({
             {/* Minimum Hidden Score Slider */}
             <div className="space-y-1.5 bg-stone-50 p-3 rounded-2xl border border-stone-100">
               <div className="flex justify-between items-center text-xs font-bold text-stone-800">
-                <span>최소 Hidden Score 필터</span>
+                <span>히든 점수 기준</span>
                 <span className="text-rose-600 font-black">{minScore}점 이상</span>
               </div>
               <input
@@ -247,7 +247,7 @@ export const AiRecommendModal: React.FC<AiRecommendModalProps> = ({
               <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 flex items-center gap-2 text-xs text-emerald-800 animate-in fade-in">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>
-                  새로운 히든 스팟 <strong>{generatedCount}곳</strong>이 발굴되어 내 목록 및 지도에 즉시 반영되었습니다!
+                  새로운 스팟 <strong>{generatedCount}곳</strong>을 찾았어요! 목록과 지도에서 확인해보세요.
                 </span>
               </div>
             )}
@@ -279,7 +279,7 @@ export const AiRecommendModal: React.FC<AiRecommendModalProps> = ({
                 <div className="flex justify-start">
                   <div className="bg-stone-100 text-stone-500 rounded-2xl p-3 text-xs flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 animate-spin text-rose-500" />
-                    <span>부산 로컬 데이터를 심층 분석 중입니다...</span>
+                    <span>답변을 작성하고 있어요...</span>
                   </div>
                 </div>
               )}
@@ -316,8 +316,8 @@ export const AiRecommendModal: React.FC<AiRecommendModalProps> = ({
               <Sparkles className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span>
                 {loading
-                  ? 'Gemini AI가 부산 로컬 데이터 분석 중...'
-                  : 'AI 맞춤 히든 스팟 발굴 시작하기'}
+                  ? '맞춤 스팟을 찾는 중...'
+                  : '맞춤 스팟 찾아보기'}
               </span>
             </button>
           </div>

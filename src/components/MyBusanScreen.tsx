@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
-import { Settings, ChevronRight, Check, Map as MapIcon, Sliders, Edit3, Sparkles } from 'lucide-react';
+import {
+  Settings,
+  ChevronRight,
+  Check,
+  Map as MapIcon,
+  Sliders,
+  Edit3,
+  Sparkles,
+  LogOut,
+  Database,
+  UserCheck,
+  Star,
+  MessageSquare,
+} from 'lucide-react';
 import { UserProfile, Spot } from '../types';
 import { EditProfileModal } from './EditProfileModal';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 interface MyBusanScreenProps {
   user: UserProfile;
@@ -11,6 +25,8 @@ interface MyBusanScreenProps {
   onOpenVisitedManager: () => void;
   onGoToMap: () => void;
   onUpdateProfile?: (updated: Partial<UserProfile>) => void;
+  onOpenAuth?: () => void;
+  onLogout?: () => void;
 }
 
 export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
@@ -21,9 +37,12 @@ export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
   onOpenVisitedManager,
   onGoToMap,
   onUpdateProfile,
+  onOpenAuth,
+  onLogout,
 }) => {
   const [activeTab, setActiveTab] = useState<'saved' | 'visited'>('saved');
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const supabaseConnected = isSupabaseConfigured();
 
   // Saved spots
   const savedSpots = spots.filter((s) => s.isSaved && !s.isVisited);
@@ -66,6 +85,12 @@ export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
               <p className="text-[11px] text-stone-600 font-medium mt-0.5">
                 {user.levelTitle}
               </p>
+              {user.email && (
+                <div className="flex items-center gap-1 mt-1 text-[10px] text-stone-400">
+                  <Database className="w-2.5 h-2.5 text-emerald-600" />
+                  <span className="truncate max-w-[130px]">{user.email}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -79,6 +104,18 @@ export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
               <Edit3 className="w-3.5 h-3.5 text-rose-500" />
               <span>프로필 수정</span>
             </button>
+
+            {onLogout && (
+              <button
+                id="profile-logout-btn"
+                onClick={onLogout}
+                className="px-2.5 py-1.5 rounded-xl bg-white/95 hover:bg-rose-50 text-stone-600 hover:text-rose-600 border border-amber-200/60 flex items-center gap-1 text-[11px] font-bold transition-all shadow-xs cursor-pointer"
+                title="로그아웃"
+              >
+                <LogOut className="w-3.5 h-3.5 text-rose-500" />
+                <span>로그아웃</span>
+              </button>
+            )}
 
             <button
               onClick={onOpenVisitedManager}
@@ -120,16 +157,47 @@ export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
             </div>
           </div>
           <div className="border-x border-stone-100">
-            <div className="text-[10px] text-stone-400 font-medium">저장된 보관함</div>
+            <div className="text-[10px] text-stone-400 font-medium">저장 목록</div>
             <div className="text-sm font-black text-rose-500 mt-0.5">
               {user.savedCount}곳
             </div>
           </div>
           <div>
-            <div className="text-[10px] text-stone-400 font-medium">제외된 기방문</div>
+            <div className="text-[10px] text-stone-400 font-medium">가본 곳</div>
             <div className="text-sm font-black text-teal-600 mt-0.5">
               {user.excludedVisitedCount}곳
             </div>
+          </div>
+        </div>
+
+        {/* Account & Supabase Status Row */}
+        <div className="flex items-center justify-between pt-1 px-0.5 text-[11px] border-t border-amber-200/50">
+          <div className="flex items-center gap-1.5 text-stone-500 font-medium">
+            <Database className="w-3.5 h-3.5 text-emerald-600" />
+            <span>DB: <strong className="text-emerald-700 font-bold">Supabase</strong></span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {onOpenAuth && (
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className="px-2 py-1 rounded-lg bg-white/90 hover:bg-white text-stone-600 border border-stone-200/60 font-bold transition-all cursor-pointer text-[10px]"
+              >
+                계정 전환
+              </button>
+            )}
+            {onLogout && (
+              <button
+                type="button"
+                id="footer-logout-btn"
+                onClick={onLogout}
+                className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 font-bold transition-all cursor-pointer text-[10px] flex items-center gap-1"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>로그아웃</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -147,7 +215,7 @@ export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
         </div>
 
         <p className="text-[11px] text-stone-400 leading-tight">
-          남들이 안 가는 숨은 골목을 걸을수록 탐험 지수가 올라갑니다.
+          새로운 로컬 스팟을 발견할수록 지수가 올라가요.
         </p>
 
         {/* Regional Progress Bars */}
@@ -194,10 +262,10 @@ export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
           </div>
           <div>
             <div className="text-xs font-bold text-stone-900">
-              내가 가본 부산 명소 관리
+              다녀온 곳 관리
             </div>
             <div className="text-[11px] text-stone-500">
-              이미 다녀온 {user.excludedVisitedCount}곳 추천에서 제외 중
+              다녀온 {user.excludedVisitedCount}곳 추천에서 제외 중
             </div>
           </div>
         </div>
@@ -253,7 +321,7 @@ export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
 
                 {/* Badges on Image */}
                 <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-sky-500/90 text-white text-[10px] font-bold">
-                  {spot.recentTrend || '로컬 4회차 이상 추천'}
+                  {spot.recentTrend || '단골 추천'}
                 </div>
 
                 <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/95 text-rose-500 text-[11px] font-black shadow-xs">
@@ -290,18 +358,42 @@ export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
                 ))}
               </div>
 
+              {/* My Review Box (If Visited and has review) */}
+              {spot.myReview && (
+                <div className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60 space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1 font-black text-amber-700">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span>{spot.myReview.rating}.0점</span>
+                    </div>
+                    <span className="text-[10px] text-stone-400">내가 남긴 한줄평</span>
+                  </div>
+                  {spot.myReview.comment && (
+                    <p className="text-xs text-stone-700 font-medium line-clamp-2 leading-relaxed italic">
+                      "{spot.myReview.comment}"
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Card Footer: Action Button & Map Shortcut */}
               <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs">
                 <button
                   onClick={(e) => onToggleVisited(spot.id, e)}
                   className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                     spot.isVisited
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
                       : 'bg-stone-50 hover:bg-stone-100 text-stone-600 border border-stone-200/60'
                   }`}
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span>{spot.isVisited ? '다녀온 곳' : '다녀왔어요'}</span>
+                  <span>
+                    {spot.isVisited
+                      ? spot.myReview
+                        ? `★ ${spot.myReview.rating}.0 리뷰 수정`
+                        : '다녀온 곳'
+                      : '가봤어요'}
+                  </span>
                 </button>
 
                 <button
@@ -335,6 +427,7 @@ export const MyBusanScreen: React.FC<MyBusanScreenProps> = ({
             }
           }}
           onClose={() => setIsEditProfileOpen(false)}
+          onLogout={onLogout}
         />
       )}
     </div>
